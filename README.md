@@ -1,3 +1,9 @@
+## execution:
+`docker compose up` and see through cqlsh what tables there are
+the ranker is very much buggy, indexer is working properly
+
+
+
 ## app folder
 This folder contains the data folder and all scripts and source code that are required to run your simple search engine. 
 
