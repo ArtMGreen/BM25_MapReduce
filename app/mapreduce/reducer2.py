@@ -29,7 +29,7 @@ word = None
 
 for line in sys.stdin:
     line = line.strip()
-    document_id, word, count = line.split('\t')
+    word, document_id, count = line.split('\t')
     try:
         count = int(count)
     except ValueError:
