@@ -23,4 +23,5 @@ bash prepare_data.sh
 bash index.sh /index/data/part-*
 
 # Run the ranker
-bash search.sh "this is a query!"
+bash search.sh "clockwork orange milk"
+bash search.sh "war peace"

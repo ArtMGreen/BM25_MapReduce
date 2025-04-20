@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+import logging
 from pyspark import SparkContext, SparkConf
 from cassandra.cluster import Cluster
 import sys
 import math
 from functools import partial
+
+logging.basicConfig(level=logging.WARN)
+logger = logging.getLogger(__name__)
 
 K1 = 1
 B = 0.75
@@ -14,9 +18,10 @@ def init_cassandra():
     cluster = Cluster(["cassandra-server"])
     session = cluster.connect("bm25")
     
-    rows = list(session.execute("SELECT length FROM doc_index"))
-    N = len(rows)
-    avg_dl = sum(row.length for row in rows) / N if N > 0 else 0
+    row = session.execute("SELECT COUNT(length) FROM doc_index").one()
+    N = row[0]
+    row = session.execute("SELECT AVG(length) FROM doc_index").one()
+    avg_dl = row[0] if row else 0
     return session, N, avg_dl
 
 def compute_bm25(query_terms, doc_id):
@@ -72,6 +77,9 @@ if __name__ == "__main__":
                      .set("spark.cassandra.connection.host", "cassandra-server")
     sc = SparkContext(conf=conf)
     
+    # info logs BEGONE ! ! ! (it just spammed to much)
+    sc.setLogLevel("WARN")
+    
     session, N, avg_dl = init_cassandra()
     doc_ids = set()
     for term in query_terms:
@@ -87,12 +95,12 @@ if __name__ == "__main__":
     bm25_scores = (
         sc.parallelize(list(doc_ids))
           .map(lambda doc_id: compute_bm25(query_terms_bc.value[0], doc_id))
-          # .filter(lambda x: x[2] > 0)
+          .filter(lambda x: x[2] > 0)
           .collect()
     )
     
     top_docs = sorted(bm25_scores, key=lambda x: -x[2])[:10]
-    print("\nTop 10 relevant documents:")
+    print("\nTop 10 (or less...) relevant documents:")
     for doc_id, title, score in top_docs:
         print(f"Document ID: {doc_id}, Title: {title}, BM25 Score: {score:.4f}")
     
